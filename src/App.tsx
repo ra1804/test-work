@@ -1,8 +1,8 @@
 import React from 'react';
-import axios from 'axios';
-import { BrowserRouter as Router, Switch, Route, Link } from 'react-router-dom';
+import { BrowserRouter as Router, Switch, Route } from 'react-router-dom';
 import Home from './pages/Home';
-import Post from './pages/Post';
+import ItemPost from './pages/ItemPost';
+import './App.css';
 
 function App() {
   return (
@@ -13,7 +13,7 @@ function App() {
             <Home />
           </Route>
           <Route path="/post/:id">
-            <Post />
+            <ItemPost />
           </Route>
         </Switch>
       </Router>

@@ -1,38 +1,83 @@
-import React, { useState, useEffect } from 'react';
-import axios from 'axios';
+import React, { useEffect, useState } from 'react';
+import { Dispatch } from 'redux';
+import { connect } from 'react-redux';
 import { Link } from 'react-router-dom';
-const preparePost = (postBody: string) => {
-  if (postBody.length > 100) {
-    const textArr = postBody.split('');
-    textArr.length = 100;
-    return textArr.join('') + '...';
-  }
-  return postBody;
-};
+import { fetchedPosts } from '../store/actions';
+import { preparePost } from '../utils/preparePost';
+import { PostState, Post } from '../store/reducers/posts';
 
-function Home() {
-  const [posts, setPosts] = useState<any>([]);
+interface Props {
+  fetchedPosts: () => void;
+  state: PostState;
+}
 
-  const getPostst = async () => {
-    const posts = await axios.get('https://jsonplaceholder.typicode.com/posts');
+function Home(props: Props) {
+  const {
+    fetchedPosts,
+    state: { posts, isLoading, error },
+  } = props;
 
-    setPosts(posts.data);
+  const [textSearch, setTextSearch] = useState<string>('');
+  const [postsList, setPostsList] = useState<Post[]>([]);
+
+  const search = () => {
+    const postsFiltered = posts.filter(
+      (item: Post) =>
+        item.title.indexOf(textSearch) !== -1 ||
+        item.body.indexOf(textSearch) !== -1
+    );
+    setPostsList(postsFiltered);
   };
 
   useEffect(() => {
-    getPostst();
-  }, []);
+    setPostsList(posts);
+    setTextSearch('');
+  }, [posts]);
+
+  useEffect(() => {
+    fetchedPosts();
+
+    const interval = setInterval(() => {
+      fetchedPosts();
+    }, 300000);
+
+    return () => clearInterval(interval);
+  }, [fetchedPosts]);
 
   return (
-    <div className="App">
-      {posts.map((post: any) => (
-        <div key={post.id}>
-          <Link to={`/post/${post.id}`}>{post.title}</Link>
-          <div>{preparePost(post.body)}</div>
-        </div>
-      ))}
-    </div>
+    <>
+      <div className="search">
+        <input
+          value={textSearch}
+          onChange={(e) => setTextSearch(e.target.value)}
+        />
+        <button onClick={() => search()}>SEARCH</button>
+        <button onClick={() => setTextSearch('')}>CLEAR</button>
+      </div>
+
+      {error && <div className="error">{error}</div>}
+      {isLoading ? (
+        <div>Loading...</div>
+      ) : (
+        postsList.map((post: Post) => (
+          <Link key={post.id} to={`/post/${post.id}`}>
+            <div className="post">
+              <div className="title">{post.title}</div>
+              <div className="body">{preparePost(post.body)}</div>
+            </div>
+          </Link>
+        ))
+      )}
+    </>
   );
 }
 
-export default Home;
+const mapStateToProps = (state: { posts: PostState }) => ({
+  state: state.posts,
+});
+
+const mapDispatchToProps = (dispatch: Dispatch) => ({
+  fetchedPosts: () => dispatch(fetchedPosts()),
+});
+
+export default connect(mapStateToProps, mapDispatchToProps)(Home);
